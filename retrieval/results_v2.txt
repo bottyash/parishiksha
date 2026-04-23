@@ -1,0 +1,71 @@
+=== Stage 2 — BM25 Retrieval  [Iteration 2: Metadata Filtering] ===
+
+──────────────────────────────────────────────────────────────────────
+Query: what are the characteristics of particles of matter  (no filter)
+──────────────────────────────────────────────────────────────────────
+  [1] score=11.9911 | page=4 | sec=1.3.1 | type=concept
+      1.3 States of Matter Observe different types of matter around you. What are its different states? We can see that matter around us exists in three different states  solid, liquid and gas. These states…
+  [2] score=11.2604 | page=3 | sec=1.2.3 | type=question
+      uestions Which of the following are matter? Chair, air, love, smell, hate, almonds, thought, cold, lemon water, smell of perfume. Give reasons for the following observation: The smell of hot sizzling …
+  [3] score=10.2483 | page=2 | sec=1.2.1 | type=concept
+      1.2 Characteristics of Particles of Matter
+  [4] score=8.5986 | page=9 | sec=1.5.1 | type=concept
+      1.5 Evaporation Do we always need to heat or change pressure for changing the state of matter? Can you quote some examples from everyday life where change of state from liquid to vapour takes place wi…
+  [5] score=8.3060 | page=2 | sec=1.2 | type=concept
+      1000 L). So we conclude that there must be millions of tiny particles in just one crystal of potassium permanganate, which keep on dividing themselves into smaller and smaller particles. The same acti…
+
+──────────────────────────────────────────────────────────────────────
+Query: evaporation causes cooling explain  (filter: type='concept')
+──────────────────────────────────────────────────────────────────────
+  [1] score=7.0509 | page=11 | sec=1 | type=concept
+      IN OUR SURROUNDINGS The arrangement of particles is most ordered in the case of solids, in the case of liquids layers of particles can slip and slide over each other while for gases, there is no order…
+  [2] score=6.7932 | page=9 | sec=1.5.2 | type=concept
+      1.5.2 HOW DOES EVAPORATION CAUSE COOLING? In an open vessel, the liquid keeps on evaporating. The particles of liquid absorb energy from the surrounding to regain the energy lost during evaporation. T…
+  [3] score=3.9323 | page=12 | sec=8 | type=concept
+      7. Why is ice at 273 K more effective in cooling than water at the same temperature?
+  [4] score=3.4521 | page=9 | sec=1.5.2 | type=concept
+      IN OUR SURROUNDINGS Record the room temperature. Record the time or days taken for the evaporation process in the above cases. Repeat the above three steps of activity on a rainy day and record your o…
+  [5] score=3.4110 | page=9 | sec=1.5.1 | type=concept
+      1.5.1 FACTORS AFFECTING EVAPORATION Let us understand this with an activity.
+
+──────────────────────────────────────────────────────────────────────
+Query: difference between solid liquid and gas  (filter: type='concept')
+──────────────────────────────────────────────────────────────────────
+  [1] score=10.0730 | page=8 | sec=1.4.2 | type=concept
+      1.4.2 EFFECT OF CHANGE OF PRESSURE We have already learnt that the difference in various states of matter is due to the difference in the distances between the constituent particles. What will happen …
+  [2] score=5.7738 | page=8 | sec=1.4.2 | type=concept
+      1 atmosphere = 1.01   105 Pa. The pressure of air in atmosphere is called atmospheric pressure. The atmospheric pressure at sea level is 1 atmosphere, and is taken as the normal atmospheric pressure. …
+  [3] score=5.6372 | page=5 | sec=1.3.3 | type=concept
+      IN OUR SURROUNDINGS higher than that of solids.  This is due to the fact that in the liquid state, particles move freely and have greater space between each other as compared to particles in the solid…
+  [4] score=4.6291 | page=7 | sec=373 | type=concept
+      IN OUR SURROUNDINGS Start heating the beaker on a low flame. Note the temperature when the ice starts melting. Note the temperature when all the ice has converted into water. Record your observations …
+  [5] score=4.5695 | page=11 | sec=1 | type=concept
+      1 kg of a liquid to gas at atmospheric pressure at its boiling point. Latent heat of fusion is the amount of heat energy required to change 1 kg of solid into liquid at its melting point. Some measura…
+
+──────────────────────────────────────────────────────────────────────
+Query: latent heat of fusion and vaporisation  (filter: type='concept')
+──────────────────────────────────────────────────────────────────────
+  [1] score=11.2757 | page=11 | sec=1 | type=concept
+      1 kg of a liquid to gas at atmospheric pressure at its boiling point. Latent heat of fusion is the amount of heat energy required to change 1 kg of solid into liquid at its melting point. Some measura…
+  [2] score=10.7745 | page=7 | sec=373 | type=concept
+      IN OUR SURROUNDINGS Start heating the beaker on a low flame. Note the temperature when the ice starts melting. Note the temperature when all the ice has converted into water. Record your observations …
+  [3] score=8.5318 | page=10 | sec=None | type=concept
+      What you have learnt Matter is made up of small particles. The matter around us exists in three states solid, liquid and gas. The forces of attraction between the particles are maximum in solids, inte…
+  [4] score=8.2988 | page=7 | sec=373 | type=concept
+      373 K (1000 C) have more energy than water at the same temperature. This is because particles in steam have absorbed extra energy in the form of latent heat of vaporisation. *Note: Kelvin is the SI un…
+  [5] score=8.0518 | page=11 | sec=1 | type=concept
+      IN OUR SURROUNDINGS The arrangement of particles is most ordered in the case of solids, in the case of liquids layers of particles can slip and slide over each other while for gases, there is no order…
+
+──────────────────────────────────────────────────────────────────────
+Query: activity dissolve salt in water  (filter: type='activity')
+──────────────────────────────────────────────────────────────────────
+  [1] score=9.9144 | page=1 | sec=1.1.1 | type=activity
+      Activity ______________ 1.1 Take a 100 mL beaker. Fill half the beaker with water and mark the level of water. Dissolve some salt/ sugar with the help of a glass rod. Observe any change in water level…
+  [2] score=6.3413 | page=1 | sec=100 | type=activity
+      Activity ______________ 1.2 Take 2 3 crystals of potassium permanganate and dissolve them in
+  [3] score=3.8654 | page=4 | sec=1.3.2 | type=activity
+      Activity _____________1.10 Collect the following: (a) water, cooking oil, milk, juice, a cold drink. (b) containers of different shapes. Put a 50 mL mark on these containers using a measuring cylinder…
+  [4] score=3.6284 | page=9 | sec=1.5.1 | type=activity
+      Activity _____________1.14 Take 5 mL of water in a test tube and keep it near a window or under a fan. Take 5 mL of water in an open china dish and keep it near a window or under a fan. Take 5 mL of w…
+  [5] score=3.4301 | page=4 | sec=1.3.2 | type=activity
+      Activity _____________  1.9 Collect the following articles   a pen, a book, a needle and a piece of wooden stick. Sketch the shape of the above articles in your notebook by moving a pencil around them…

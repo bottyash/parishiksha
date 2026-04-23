@@ -1,29 +1,29 @@
-# PariShiksha — NCERT Textbook Corpus Pipeline
+# PariShiksha - NCERT Textbook Corpus Pipeline
 
-> **Week 9 Assignment** — PDF ingestion, structured extraction, tokenizer comparison, and chunking design for an NCERT Science textbook.
+> **Week 9 Assignment** - Taking a raw NCERT Science PDF and turning it into something a retrieval system can actually reason over. This covers ingestion, structured extraction, tokenizer comparison and chunking design.
 
 ---
 
-## 📚 Source Material
+## What We're Working With
 
 | Item | Detail |
 |------|--------|
-| **Textbook** | NCERT Class 9 Science — *Matter in Our Surroundings* |
+| **Textbook** | NCERT Class 9 Science - *Matter in Our Surroundings* |
 | **Chapters used** | Chapter 1 (`ch1.pdf`) |
 | **Download** | [https://ncert.nic.in/textbook.php?iesc1=0-11](https://ncert.nic.in/textbook.php?iesc1=0-11) |
-| **Local path** | `./pdfs/` (place downloaded PDFs here) |
+| **Local path** | `./pdfs/` - drop your downloaded PDFs here |
 
 ---
 
-## 🗂️ Project Structure
+## How the Project is Laid Out
 
 ```
 PariShiksha/
 ├── pdfs/                        # Input PDFs (ch1.pdf … ch12.pdf)
 ├── extracted_text/
-│   ├── extracted_text.json      # Structured extraction output (v4)
-│   ├── extracted_text.txt       # Plain-text extraction output
-│   └── versions/                # v1–v4 incremental extraction outputs
+│   ├── extracted_text.json      # Final structured extraction output (v4)
+│   ├── extracted_text.txt       # Plain-text version for quick inspection
+│   └── versions/                # v1-v4 incremental extraction outputs
 ├── chunk/
 │   └── chunked_text.json        # Chunked output ready for retrieval
 ├── tokening/
@@ -36,46 +36,47 @@ PariShiksha/
 ├── StageDocumentation/
 │   ├── Stage1.md                # Extraction dev log
 │   └── Stage2.md                # Retrieval dev log
-├── textextract.py               # Stage 1 — PDF extraction & structuring
+├── textextract.py               # Stage 1 - PDF extraction & structuring
 ├── tokening.py                  # Tokenizer comparison (GPT-2 / BERT / T5)
 ├── chunking.py                  # Overlapping chunking
-├── retrieval.py                 # Stage 2 — BM25 retrieval
+├── retrieval.py                 # Stage 2 - BM25 retrieval
 ├── hld.txt                      # High-level pipeline diagram
 └── README.md
 ```
 
 ---
 
-## 🔄 Pipeline Overview
+## The Big Picture
+
+At its core, the pipeline takes a PDF and progressively shapes it into something useful:
 
 ```
 NCERT PDF
-   ↓
-[Ingestion + OCR fallback]       →  textextract.py
-   ↓
-[Cleaning + Structuring]         →  extracted_text/extracted_text.json
-   ↓
-[Tokenizer Comparison]           →  tokening.py
-   ↓
-[Chunking + Metadata]            →  chunking.py
-   ↓
-[Lexical Retrieval (BM25)]  ✅   →  retrieval.py
-   ↓
-[LLM (Grounded Generation)]      →  (Stage 3)
-   ↓
-[Evaluation Engine]              →  (Stage 4)
+  |
+[Ingestion + OCR fallback]       textextract.py
+  |
+[Cleaning + Structuring]         extracted_text/extracted_text.json
+  |
+[Tokenizer Comparison]           tokening.py
+  |
+[Chunking + Metadata]            chunking.py
+  |
+[Lexical Retrieval (BM25)]       retrieval.py
+  |
+[LLM (Grounded Generation)]      (Stage 3)
+  |
+[Evaluation Engine]              (Stage 4)
 ```
 
 ---
 
-## 🚀 Quick Start
+## Getting Started
 
 ### 1. Prerequisites
 
-Python 3.10+ and `pip`. A virtual environment is recommended.
+Python 3.10+ and `pip`. A virtual environment keeps things clean.
 
 ```bash
-# Create and activate virtual environment
 python -m venv .venv
 
 # Windows
@@ -91,14 +92,14 @@ source .venv/bin/activate
 pip install pymupdf transformers tokenizers sentencepiece rank-bm25
 ```
 
-> `rank-bm25` is required for Stage 2 retrieval. HuggingFace will auto-download tokenizer weights on first run.
+> `rank-bm25` is needed for Stage 2. HuggingFace will pull down tokenizer weights automatically on first run, so no extra setup is required.
 
-### 3. Download PDFs
+### 3. Download the PDFs
 
-Download the NCERT textbook chapters from:
+Grab the chapters from:
 [https://ncert.nic.in/textbook.php?iesc1=0-11](https://ncert.nic.in/textbook.php?iesc1=0-11)
 
-Place the downloaded files in the `./pdfs/` directory:
+Then drop them into `./pdfs/`:
 ```
 pdfs/ch1.pdf
 pdfs/ch2.pdf
@@ -106,16 +107,20 @@ pdfs/ch2.pdf
 
 ### 4. Run the Pipeline
 
-Run each script **in order**:
+Run each script in order. Each one builds on the output of the previous.
 
-#### Step 1 — Extract & Structure PDF Text
+---
+
+#### Step 1 - Extract & Structure the PDF
+
 ```bash
 python textextract.py
 ```
-**Output:** `extracted_text/extracted_text.json`  
-**Current version:** v4 (JSON, section-aware) — see version history below.
 
-Each entry in the JSON has the form:
+**Output:** `extracted_text/extracted_text.json`
+
+This is v4 of the extractor, the most refined version. Instead of dumping raw text, it gives you structured blocks like:
+
 ```json
 {
   "page": 3,
@@ -124,40 +129,42 @@ Each entry in the JSON has the form:
   "text": "Matter is made up of particles..."
 }
 ```
-Content types: `concept` | `activity` | `question`
 
-#### Extraction Version History
+Every block is tagged as one of: `concept` | `activity` | `question`
 
-| Version | File | Format | Key Change |
-|---------|------|--------|------------|
-| v1 | `extracted_text/versions/v1.txt` | Plain text | Raw `page.get_text()` output — noisy, no structure |
-| v2 | `extracted_text/versions/v2.txt` | Plain text | Added regex cleaning (headers, footers, page numbers) |
-| v3 | `extracted_text/versions/v3.txt` | Plain text | Layout-aware `get_text("blocks")` + sorted reading order |
-| **v4** ✅ | `extracted_text/extracted_text.json` | **JSON** | Anchor-based segmentation, section tracking, content-type labelling |
+**How the extractor evolved over time:**
 
-> `textextract.py` currently produces **v4** — the final structured JSON with `page`, `section`, `type`, and `text` fields per block.
+| Version | File | Format | What Changed |
+|---------|------|--------|--------------|
+| v1 | `extracted_text/versions/v1.txt` | Plain text | Raw `page.get_text()` output, noisy with no structure |
+| v2 | `extracted_text/versions/v2.txt` | Plain text | Regex cleaning to remove headers, footers and page numbers |
+| v3 | `extracted_text/versions/v3.txt` | Plain text | Layout-aware blocks + sorted reading order |
+| **v4** | `extracted_text/extracted_text.json` | **JSON** | Anchor-based segmentation, section tracking and content-type labels |
 
-
+> The jump from v3 to v4 was the biggest leap, moving from "cleaner text" to "actually structured data."
 
 ---
 
-#### Step 2 — Tokenizer Comparison
+#### Step 2 - Compare Tokenizers
+
 ```bash
 python tokening.py
 ```
+
 **Output:** `tokening/tokenizer_analysis.txt`
 
-Compares **GPT-2 BPE**, **BERT WordPiece**, and **T5 SentencePiece** on 5 representative passages drawn from the extracted corpus.
+Runs GPT-2, BERT and T5 over five representative passages from the corpus to see how each handles the textbook's content: section headings, activity blocks and units like `mL`.
 
 ---
 
-#### Step 3 — Chunking
+#### Step 3 - Chunk the Corpus
+
 ```bash
 python chunking.py
 ```
+
 **Output:** `chunk/chunked_text.json`
 
-Each chunk has the form:
 ```json
 {
   "chunk_id": 12,
@@ -168,50 +175,51 @@ Each chunk has the form:
 
 ---
 
-#### Step 4 — BM25 Retrieval ✅
+#### Step 4 - Run BM25 Retrieval
+
 ```bash
 python retrieval.py
 ```
-**Output:** `retrieval/results_v3.txt`, `retrieval/results_v3.json`
 
-Runs 5 demo queries against the BM25 index and saves results. If run from a terminal, also starts an **interactive search REPL**.
+**Output:** `retrieval/results_v3.txt` and `retrieval/results_v3.json`
 
-**Inline type filters:**
+Runs 5 demo queries against the BM25 index. If you're in a terminal, it also drops you into an interactive search REPL:
+
 ```
-🔍 Query > evaporation cooling --concept
-🔍 Query > dissolve salt beaker --activity
-🔍 Query > stats
+Query > evaporation cooling --concept
+Query > dissolve salt beaker --activity
+Query > stats
 ```
 
-**Retrieval version history:**
+**How retrieval evolved:**
 
 | Version | Output | Key Addition |
 |---------|--------|--------------|
 | v1 | `results_v1.txt` | Basic BM25 index + 5 demo queries |
 | v2 | `results_v2.txt` | Metadata type filter + deduplication |
-| **v3** ✅ | `results_v3.txt` + `results_v3.json` | Color output, term highlighting, REPL, JSON export |
+| **v3** | `results_v3.txt` + `results_v3.json` | Color output, term highlighting, REPL and JSON export |
 
 Full dev log: [`StageDocumentation/Stage2.md`](StageDocumentation/Stage2.md)
 
 ---
 
-## 📐 Content-Type Classification
+## Content-Type Classification
 
 `textextract.py` classifies every extracted block into one of three types:
 
 | Type | Detection Rule | Example |
 |------|---------------|---------|
-| `activity` | Line matches `Activity \d+\.\d+` | *"Activity 1.1 Take a 100 mL beaker…"* |
-| `question` | Line contains `Questions` / `uestions` | *"Questions 1. Convert 300 K to…"* |
-| `concept` | All other prose | *"Matter is made up of particles that are very small…"* |
+| `activity` | Line matches `Activity \d+\.\d+` | *"Activity 1.1 Take a 100 mL beaker..."* |
+| `question` | Line contains `Questions` / `uestions` | *"Questions 1. Convert 300 K to..."* |
+| `concept` | All other prose | *"Matter is made up of particles that are very small..."* |
 
-**Anchor-based segmentation:** a new block is started on every section heading (`1.1`, `1.2.3`), every `Activity`, and every `Questions` anchor — preventing over-merging and over-fragmentation.
+Anchor-based segmentation starts a new block on every section heading (`1.1`, `1.2.3`), every `Activity` and every `Questions` marker. This prevents over-merging and over-fragmentation.
 
 ---
 
-## 🔤 Tokenizer Analysis
+## Tokenizer Analysis
 
-Five passages (at least one from each content type) were tokenised with all three tokenizers. Results from `StageDocumentation/Stage1.md`:
+Five passages (at least one from each content type) were tokenised with all three tokenizers.
 
 | Sample | GPT-2 BPE | BERT WordPiece | T5 SentencePiece |
 |--------|-----------|----------------|-----------------|
@@ -221,56 +229,56 @@ Five passages (at least one from each content type) were tokenised with all thre
 | Question | 50 | **47** | **47** |
 | Mixed / figure content | 112 | **110** | 128 |
 
-### Where Boundaries Disagree
+**Where the tokenizers disagree:**
 
 | Tokenizer | Sub-word marker | Behaviour |
 |-----------|----------------|-----------|
-| GPT-2 BPE | `Ġ` (space prefix) | Aggressive splitting; numeric sections (`1.1.1`) fragmented into `1`, `.`, `1`, `.`, `1` |
-| BERT WordPiece | `##` (continuation) | Lowercases input; compact on section headings; underscore tokens expanded individually |
-| T5 SentencePiece | `▁` (word-start) | More natural word boundaries but balloons on mixed units (`mL` → `m`, `L`) |
+| GPT-2 BPE | `Ġ` (space prefix) | Aggressive splitting; numeric sections like `1.1.1` fragment into `1`, `.`, `1`, `.`, `1` |
+| BERT WordPiece | `##` (continuation) | Lowercases input; compact on section headings; underscores expanded individually |
+| T5 SentencePiece | `▁` (word-start) | More natural word boundaries but balloons on mixed units (`mL` becomes `m`, `L`) |
 
-### ✅ Recommended Tokenizer: BERT (`bert-base-uncased`)
+**Recommended tokenizer: BERT (`bert-base-uncased`)**
 
-- Consistently lowest token counts — enables larger meaningful chunks within model limits
+- Consistently lowest token counts, enabling larger meaningful chunks within model limits
 - Lowercase normalisation handles noisy ALL-CAPS OCR output cleanly
-- Best task alignment for BM25 retrieval and grounded QA (Stage 2 & 3)
+- Best task alignment for BM25 retrieval and grounded QA (Stage 2 and 3)
 
-> **Caveat:** If the downstream model switches to T5/FLAN-T5, the tokenizer must also switch — tokenizer and model must always belong to the same family.
+> **Note:** If the downstream model switches to T5 or FLAN-T5, the tokenizer must switch too. Tokenizer and model always need to belong to the same family.
 
 ---
 
-## ✂️ Chunking Strategy
+## Chunking Strategy
 
 **Parameters:** `chunk_size = 300 words`, `overlap = 50 words`
 
 | Decision | Justification |
 |----------|--------------|
-| **300-word chunks** | Balances retrieval precision and context sufficiency; fits comfortably within 512-token BERT limit after tokenisation |
+| **300-word chunks** | Balances retrieval precision and context sufficiency; fits comfortably within the 512-token BERT limit after tokenisation |
 | **50-word overlap (~17%)** | Prevents boundary artefacts when a concept spans two consecutive chunks; improves recall for cross-boundary queries |
-| **Content-type handling** | `activity` and `question` blocks that fit within the budget are kept whole; long blocks receive their own chunk sequence with overlap resetting at each semantic anchor |
-| **Structured JSON output** | Preserves `page`, `section`, and `type` metadata per chunk for traceable retrieval |
+| **Content-type handling** | `activity` and `question` blocks that fit within the budget are kept whole; long blocks get their own chunk sequence with overlap resetting at each semantic anchor |
+| **Structured JSON output** | Preserves `page`, `section` and `type` metadata per chunk for traceable retrieval |
 
-> **Key insight:** Chunking quality has a greater impact on downstream QA performance than model selection.
+> Chunking quality has a greater impact on downstream QA performance than model selection.
 
 ---
 
-## 🧹 Extraction Phases (Summary)
+## Extraction Phases (Summary)
 
 | Phase | Change | Outcome |
 |-------|--------|---------|
-| 1 — Raw extraction | `page.get_text()` via PyMuPDF | Raw noisy text |
-| 2 — Cleaning | Regex removal of headers, footers, page numbers | Cleaner text |
-| 3 — Layout awareness | `page.get_text("blocks")` sorted by position | Better paragraph grouping |
-| 4 — Structured parsing | Anchor-based segmentation, state-based section tracking | Semantic blocks with `type` and `section` |
-| 5 — OCR fallback | Tesseract on low-quality pages | Handles scanned/diagram pages |
-| 6 — Chunking | Overlapping word-level windows | Retrieval-ready chunks |
-| 7 — Tokenizer analysis | GPT-2 / BERT / T5 compared on corpus samples | BERT selected |
+| 1 - Raw extraction | `page.get_text()` via PyMuPDF | Raw noisy text |
+| 2 - Cleaning | Regex removal of headers, footers and page numbers | Cleaner text |
+| 3 - Layout awareness | `page.get_text("blocks")` sorted by position | Better paragraph grouping |
+| 4 - Structured parsing | Anchor-based segmentation and state-based section tracking | Semantic blocks with `type` and `section` |
+| 5 - OCR fallback | Tesseract on low-quality pages | Handles scanned and diagram pages |
+| 6 - Chunking | Overlapping word-level windows | Retrieval-ready chunks |
+| 7 - Tokenizer analysis | GPT-2, BERT and T5 compared on corpus samples | BERT selected |
 
 Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1.md)
 
 ---
 
-## ⚠️ Key Challenges & Resolutions
+## Key Challenges and Resolutions
 
 | # | Challenge | Resolution |
 |---|-----------|------------|
@@ -282,26 +290,26 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 
 ---
 
-## 📦 Output Files
+## Output Files
 
 | File | Description |
 |------|-------------|
-| `extracted_text/extracted_text.json` | Structured blocks with `page`, `section`, `type`, `text` |
+| `extracted_text/extracted_text.json` | Structured blocks with `page`, `section`, `type` and `text` |
 | `extracted_text/extracted_text.txt` | Plain-text version for quick inspection |
-| `extracted_text/versions/` | Extraction outputs v1–v4 |
+| `extracted_text/versions/` | Extraction outputs v1-v4 |
 | `chunk/chunked_text.json` | Overlapping word-level chunks with metadata |
-| `tokening/tokenizer_analysis.txt` | Token counts and first-25 tokens per sample per tokenizer |
-| `retrieval/results_v3.json` | Structured BM25 results (query → top-5 blocks with metadata) |
+| `tokening/tokenizer_analysis.txt` | Token counts and first 25 tokens per sample per tokenizer |
+| `retrieval/results_v3.json` | Structured BM25 results (query to top-5 blocks with metadata) |
 | `StageDocumentation/Stage1.md` | Extraction iterative development log |
 | `StageDocumentation/Stage2.md` | Retrieval iterative development log |
 
 ---
 
-## 🔮 Stages
+## Stages
 
 | Stage | Status | Description |
 |-------|--------|-------------|
-| Stage 1 | ✅ Complete | PDF extraction, structuring, tokenizer analysis, chunking |
-| Stage 2 | ✅ Complete | BM25 lexical retrieval with metadata filtering |
-| Stage 3 | 🔜 Planned | Grounded QA with an LLM |
-| Stage 4 | 🔜 Planned | Evaluation Engine (precision, recall, faithfulness) |
+| Stage 1 | Complete | PDF extraction, structuring, tokenizer analysis and chunking |
+| Stage 2 | Complete | BM25 lexical retrieval with metadata filtering |
+| Stage 3 | Planned | Grounded QA with an LLM |
+| Stage 4 | Planned | Evaluation Engine (precision, recall and faithfulness) |

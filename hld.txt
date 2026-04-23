@@ -1,0 +1,13 @@
+NCERT PDF
+   ↓
+[Ingestion + OCR]
+   ↓
+[Cleaning + Structuring]
+   ↓
+[Chunking + Metadata]
+   ↓
+[Lexical Retrieval (BM25)]
+   ↓
+[LLM (Grounded Generation)]
+   ↓
+[Evaluation Engine]

@@ -1,106 +1,62 @@
-# Stage 2: BM25 Retrieval
+# Stage 2: Lexical and Dense Retrieval
 ## Development Log
 
 ---
 
 ## 📌 Objective
 
-Build a **lexical retrieval engine** over the structured NCERT corpus from Stage 1 using BM25 (Best Match 25), enabling relevant block retrieval given a natural-language query.
+Build retrieval engines over the structured NCERT corpus from Stage 1. 
+- **Stage 2a:** Lexical retrieval using BM25
+- **Stage 2b:** Dense retrieval using `sentence-transformers/all-MiniLM-L6-v2` (Bi-encoder)
 
 ---
 
-## 🔁 Iterative Development
+## 🔁 Stage 2a — Lexical Retrieval (BM25)
 
-### Iteration 1 — Basic BM25 (`results_v1.txt`)
+*Iterations 1, 2, and 3 implemented `retrieval.py`.*
 
-**What was built:**
-- Loaded `extracted_text.json`, filtered blocks with < 5 words
-- Tokenized using lowercase + regex: `re.findall(r"[a-z0-9]+", text.lower())`
-- Built `BM25Okapi` index via `rank-bm25`
-- Ran 5 demo queries, saved top-5 results per query to plain text
+| Iter | Key Feature | Output |
+|------|-------------|--------|
+| **1** | Built `BM25Okapi` index over 92 corpus blocks. | `results_v1.txt` |
+| **2** | Added `content_type` filtering to target specific sections. Dropped duplicates (first 80 chars). | `results_v2.txt` |
+| **3** | Added interactive terminal REPL with color highlighting and inline type flags. JSON export added. | `results_v3.json` |
 
-**Issues observed:**
-- Duplicate blocks appeared (same section heading split across pages)
-- No way to target specific content types (concept vs activity vs question)
-
----
-
-### Iteration 2 — Metadata Filtering + Deduplication (`results_v2.txt`)
-
-**What was built:**
-- Wrapped BM25 logic in a `BM25Retriever` class
-- Added `content_type` filter parameter: optionally restrict to `concept`, `activity`, or `question`
-- Added deduplication: skip results whose first 80 chars match an already-seen result
-- Stopped early when `score == 0` (no more relevant results)
-- Pretty-printed results with score, page, section, type
-
-**Improvement observed:**
-- Filtering `activity` blocks correctly surfaced lab-activity blocks for "dissolve salt in water"
-- Concept-filtered queries stayed cleanly within explanatory prose
+**Pros:** Fast, exact keyword matching (especially good for specific terms like "Panch Tatva").
+**Cons:** Misses semantic overlap (e.g. "boiling" vs "vaporisation").
 
 ---
 
-### Iteration 3 — Interactive CLI + JSON Export (`results_v3.txt`, `results_v3.json`)
+## 🔁 Stage 2b — Dense Retrieval (MiniLM)
 
-**What was built:**
-- ANSI colour output: green=concept, yellow=activity, cyan=question
-- Query-term **bold highlighting** in result snippets
-- `--concept` / `--activity` / `--question` flags parsed inline from query string
-- `stats` command showing corpus breakdown by type
-- Structured **JSON export** of all demo results (`results_v3.json`)
-- Interactive REPL exits cleanly when stdin is not a terminal (piped runs)
+*Iterations 4, 5, and 6 implemented `dense_retrieval.py` to overcome lexical limitations.*
 
----
+### Iteration 1 — MiniLM Base (`dense_results_v1.txt`)
+- Loaded `sentence-transformers/all-MiniLM-L6-v2` (384-dimensional embeddings).
+- Normalised vectors and used numpy matrix multiplication for exact cosine similarity search.
+- Successfully matched semantic queries: "evaporation cooling" mathematically aligned with the text block *"In an open vessel, the liquid keeps on evaporating. The particles ... absorb energy ... make the surroundings cold."* at 0.74 cosine sim. 
 
-## 📊 Corpus Stats
+### Iteration 2 — Embedding Cache (`dense_results_v2.txt`)
+- Model encoding on a CPU takes a few seconds. Added an `np.save` embedding cache at `retrieval/cache/corpus_embeddings.npy`.
+- Encoding now only happens on the first run; subsequent runs load the numeric cache instantly.
+- *(Note: Initially attempted FAISS `IndexFlatIP`, but the tiny corpus size triggered a Windows paging allocation error. Reverted to pure numpy which is entirely sufficient for <1000 blocks).*
 
-| Type | Blocks |
-|------|--------|
-| concept | 62 |
-| activity | 17 |
-| question | 13 |
-| **Total** | **92** |
+### Iteration 3 — Interactive REPL & Export (`dense_results_v3.json`)
+- Brought dense retrieval to feature-parity with BM25.
+- Added color output, structured JSON generation, and a terminal search loop.
 
 ---
 
-## 🔍 Sample Results (Iteration 3)
+## 📊 Lexical vs Dense Performance (Observation)
 
-### Query: "evaporation causes cooling explain" `[filter: concept]`
+| Query | BM25 Top Match | MiniLM Top Match |
+|-------|----------------|------------------|
+| *"evaporation causes cooling"* | Score: 7.32 (Hits exact words) | Score: 0.74 (Hits semantic intent) |
+| *"latent heat"* | Score: 6.50 (Finds definition chunk) | Score: 0.65 (Finds definition chunk) |
 
-| Rank | Score | Page | Section | Excerpt |
-|------|-------|------|---------|---------|
-| 1 | 7.32 | 9 | 1.5.2 | *"In an open vessel, the liquid keeps on evaporating. The particles of liquid absorb energy from the surrounding…"* |
-| 2 | 5.91 | 9 | 1.5.1 | *"…a small fraction of particles at the surface, having higher kinetic energy, is able to break away…"* |
-| 3 | 4.87 | 9 | 1.5.2 | *"…rate of evaporation increases with an increase of surface area…"* |
-
-### Query: "activity dissolve salt in water" `[filter: activity]`
-
-| Rank | Score | Page | Section | Excerpt |
-|------|-------|------|---------|---------|
-| 1 | 8.14 | 1 | 1.1.1 | *"Activity 1.1 Take a 100 mL beaker. Fill half the beaker with water… Dissolve some salt/sugar…"* |
-
----
-
-## 🧠 Design Decisions
-
-| Decision | Justification |
-|----------|--------------|
-| `BM25Okapi` variant | Okapi BM25 includes IDF saturation — handles common words better than plain BM25 |
-| Tokenize with `[a-z0-9]+` | Strips punctuation and normalises units (`mL`, `CO2`) without losing content |
-| Deduplication on first 80 chars | Prevents repeated section headings (e.g., `"1.3"` appearing on 4 pages) dominating results |
-| Type filter optional | Allows unrestricted search by default; targeted filter when content type is known |
-| JSON export | Structured output enables direct piping into Stage 3 (Grounded QA) |
-
----
-
-## ⚠️ Limitations
-
-- Pure lexical: no semantic understanding — query "boiling" won't match "vaporisation" unless both terms appear
-- Section metadata in corpus has some noise (`"100"`, `null`) from OCR — does not affect retrieval but clutters output
-- No query expansion or stemming yet
+**Conclusion:** Both are viable. Dense retrieval is more resilient to paraphrasing, but BM25 is better at exact terminology lookup. A hybrid approach (Reciprocal Rank Fusion) would be ideal if precision requirements increase.
 
 ---
 
 ## 🚀 Next: Stage 3 — Grounded QA
 
-Pipe `results_v3.json` top-k results as context into an LLM to generate grounded, faithful answers with source attribution.
+Pipe `results_v3.json` or `dense_results_v3.json` top-k results as context into a generative LLM (like T5) to provide grounded answers with source attribution.

@@ -29,17 +29,17 @@ PariShiksha/
 ├── tokening/
 │   └── tokenizer_analysis.txt   # GPT-2 / BERT / T5 comparison report
 ├── retrieval/
-│   ├── results_v1.txt           # Basic BM25 results
-│   ├── results_v2.txt           # Filtered + deduplicated results
-│   ├── results_v3.txt           # Final plain-text results
-│   └── results_v3.json          # Structured JSON results
+│   ├── cache/                   # Dense embedding matrix (.npy)
+│   ├── results_v3.json          # BM25 structured results
+│   └── dense_results_v3.json    # Dense structured results
 ├── StageDocumentation/
 │   ├── Stage1.md                # Extraction dev log
-│   └── Stage2.md                # Retrieval dev log
+│   └── Stage2.md                # Retrieval dev log (Lexical + Dense)
 ├── textextract.py               # Stage 1 - PDF extraction & structuring
 ├── tokening.py                  # Tokenizer comparison (GPT-2 / BERT / T5)
 ├── chunking.py                  # Overlapping chunking
-├── retrieval.py                 # Stage 2 - BM25 retrieval
+├── retrieval.py                 # Stage 2a - BM25 lexical retrieval
+├── dense_retrieval.py           # Stage 2b - MiniLM dense retrieval
 ├── hld.txt                      # High-level pipeline diagram
 └── README.md
 ```
@@ -62,6 +62,8 @@ NCERT PDF
 [Chunking + Metadata]            chunking.py
   |
 [Lexical Retrieval (BM25)]       retrieval.py
+  |
+[Dense Retrieval (MiniLM)]       dense_retrieval.py
   |
 [LLM (Grounded Generation)]      (Stage 3)
   |
@@ -89,10 +91,10 @@ source .venv/bin/activate
 ### 2. Install Dependencies
 
 ```bash
-pip install pymupdf transformers tokenizers sentencepiece rank-bm25
+pip install pymupdf transformers tokenizers sentencepiece rank-bm25 sentence-transformers
 ```
 
-> `rank-bm25` is needed for Stage 2. HuggingFace will pull down tokenizer weights automatically on first run, so no extra setup is required.
+> `rank-bm25` is needed for Stage 2a (Lexical). `sentence-transformers` is needed for Stage 2b (Dense). HuggingFace will pull down tokenizer and model weights automatically on first run ($~80MB$ for the MiniLM model).
 
 ### 3. Download the PDFs
 
@@ -175,15 +177,29 @@ python chunking.py
 
 ---
 
-#### Step 4 - Run BM25 Retrieval
+### Stage 2 — Retrieval
 
+We implement two distinct retrieval engines to compare their efficacy. Both scripts offer an interactive REPL when run from a terminal.
+
+#### Stage 2a - BM25 Lexical Retrieval
 ```bash
 python retrieval.py
 ```
-
 **Output:** `retrieval/results_v3.txt` and `retrieval/results_v3.json`
 
-Runs 5 demo queries against the BM25 index. If you're in a terminal, it also drops you into an interactive search REPL:
+Lexical retrieval excels at exact keyword matching.
+
+#### Stage 2b - Dense Semantic Retrieval (MiniLM)
+```bash
+python dense_retrieval.py
+```
+**Output:** `retrieval/dense_results_v3.txt` and `retrieval/dense_results_v3.json`
+
+Uses the bi-encoder `sentence-transformers/all-MiniLM-L6-v2`. Embeddings are cached to `retrieval/cache/corpus_embeddings.npy` on the first run, so subsequent runs are instant. Dense retrieval excels at semantic similarity (e.g. matching "evaporation cooling" to the correct conceptual paragraph even if the exact keyword overlaps are low).
+
+---
+
+**Interactive REPL usage (for both scripts):**
 
 ```
 Query > evaporation cooling --concept
@@ -198,6 +214,14 @@ Query > stats
 | v1 | `results_v1.txt` | Basic BM25 index + 5 demo queries |
 | v2 | `results_v2.txt` | Metadata type filter + deduplication |
 | **v3** | `results_v3.txt` + `results_v3.json` | Color output, term highlighting, REPL and JSON export |
+
+**How dense retrieval evolved:**
+
+| Version | File | Key Addition |
+|---------|------|--------------|
+| v1 | `dense_results_v1.txt` | `SentenceTransformer` encoded index + numpy cosine similarity array |
+| v2 | `dense_results_v2.txt` | `.npy` disk cache so model evaluation only runs once |
+| **v3** | `dense_results_v3.json` | Full feature parity with BM25: interactive REPL, JSON export, inline flags |
 
 Full dev log: [`StageDocumentation/Stage2.md`](StageDocumentation/Stage2.md)
 
@@ -300,8 +324,10 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | `chunk/chunked_text.json` | Overlapping word-level chunks with metadata |
 | `tokening/tokenizer_analysis.txt` | Token counts and first 25 tokens per sample per tokenizer |
 | `retrieval/results_v3.json` | Structured BM25 results (query to top-5 blocks with metadata) |
+| `retrieval/dense_results_v3.json` | Structured MiniLM dense results |
+| `retrieval/cache/corpus_embeddings.npy` | Cached 384-dimensional dense vectors |
 | `StageDocumentation/Stage1.md` | Extraction iterative development log |
-| `StageDocumentation/Stage2.md` | Retrieval iterative development log |
+| `StageDocumentation/Stage2.md` | Retrieval (BM25 + Dense) iterative log |
 
 ---
 
@@ -310,6 +336,7 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | Stage | Status | Description |
 |-------|--------|-------------|
 | Stage 1 | Complete | PDF extraction, structuring, tokenizer analysis and chunking |
-| Stage 2 | Complete | BM25 lexical retrieval with metadata filtering |
+| Stage 2a | Complete | BM25 lexical retrieval with metadata filtering |
+| Stage 2b | Complete | Dense bi-encoder retrieval (MiniLM) with numpy cache |
 | Stage 3 | Planned | Grounded QA with an LLM |
 | Stage 4 | Planned | Evaluation Engine (precision, recall and faithfulness) |

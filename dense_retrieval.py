@@ -1,7 +1,9 @@
 # dense_retrieval.py — Stage 2b: Dense Retrieval
-# Iteration 2: Embedding cache (encode once, search fast with numpy)
+# Iteration 3: Interactive CLI + JSON export + color highlighting
 
 import json
+import os
+import sys
 import warnings
 import numpy as np
 from pathlib import Path
@@ -26,16 +28,13 @@ def load_corpus(path: str) -> list[dict]:
     return [d for d in data if len(d["text"].split()) > 5]
 
 
-# ── dense retriever with FAISS + cache ───────────────────────────────────────
+# ── retriever ─────────────────────────────────────────────────────────────────
 
 class DenseRetriever:
     """
     Bi-encoder retriever using sentence-transformers/all-MiniLM-L6-v2.
-
-    Embeddings are cached to disk so encoding only happens once —
-    subsequent runs load from cache in milliseconds.
+    Embeddings are cached to disk so encoding only happens once.
     Cosine similarity via numpy dot product on normalised vectors.
-    (Sufficient for corpora of a few hundred blocks; swap in FAISS for scale.)
     """
 
     def __init__(self, corpus: list[dict], model_name: str = MODEL_NAME):
@@ -43,7 +42,7 @@ class DenseRetriever:
         self.model  = SentenceTransformer(model_name)
 
         if EMB_CACHE.exists():
-            print("  Loading cached embeddings …", flush=True)
+            print("  Loading cached dense embeddings …", flush=True)
             self.embeddings = np.load(str(EMB_CACHE)).astype("float32")
         else:
             print(f"  Encoding {len(corpus)} blocks with {model_name} …", flush=True)
@@ -64,7 +63,7 @@ class DenseRetriever:
         content_type: str | None = None,
     ) -> list[dict]:
         q_emb  = self.model.encode([query], normalize_embeddings=True).astype("float32")[0]
-        scores = self.embeddings @ q_emb       # cosine similarity (vecs are normalised)
+        scores = self.embeddings @ q_emb
         ranked = np.argsort(scores)[::-1]
 
         results = []
@@ -84,6 +83,26 @@ class DenseRetriever:
         return {"total": len(self.corpus), "by_type": types}
 
 
+# ── formatting ────────────────────────────────────────────────────────────────
+
+BOLD = "\033[1m"
+CYAN = "\033[96m"
+GRN  = "\033[92m"
+YLW  = "\033[93m"
+RST  = "\033[0m"
+
+TYPE_COLOR = {"concept": GRN, "activity": YLW, "question": CYAN}
+
+def fmt_result(rank: int, r: dict, color: bool = True) -> str:
+    tc = TYPE_COLOR.get(r["type"], "") if color else ""
+    snippet = r["text"][:220].replace("\n", " ") + ("…" if len(r["text"]) > 220 else "")
+    return (
+        f"  [{rank}] score={r['score']:.4f} | "
+        f"page={r['page']} | sec={r['section']} | {tc}type={r['type']}{RST if color else ''}\n"
+        f"      {snippet}"
+    )
+
+
 # ── demo queries ──────────────────────────────────────────────────────────────
 
 DEMO_QUERIES = [
@@ -94,60 +113,93 @@ DEMO_QUERIES = [
     ("activity dissolve salt in water",                   "activity"),
 ]
 
-
 def run_demo(retriever: DenseRetriever) -> tuple[list[dict], list[str]]:
     records:   list[dict] = []
-    out_lines: list[str]  = [
-        "=== Stage 2b — Dense Retrieval [Iteration 2: FAISS + Cache] ===\n"
-    ]
+    out_lines: list[str]  = ["Stage 2b — Dense Retrieval [Iteration 3: REPL]\n"]
 
     for query, ctype in DEMO_QUERIES:
         filter_str = f" [filter: {ctype}]" if ctype else ""
         header     = f"Query: {query}{filter_str}"
         sep        = "─" * 70
 
-        print(f"\n{sep}\n{header}\n{sep}")
+        print(f"\n{sep}\n{BOLD}{header}{RST}\n{sep}")
         out_lines += ["", sep, header, sep]
 
         results = retriever.search(query, top_k=5, content_type=ctype)
-        for rank, r in enumerate(results, 1):
-            snippet = r["text"][:220].replace("\n", " ")
-            if len(r["text"]) > 220:
-                snippet += "…"
-            line = (
-                f"  [{rank}] score={r['score']:.4f} | "
-                f"page={r['page']} | sec={r['section']} | type={r['type']}\n"
-                f"      {snippet}"
-            )
-            print(line)
-            out_lines.append(line)
-
+        if not results:
+            msg = "  (no results)"
+            print(msg); out_lines.append(msg)
+        else:
+            for rank, r in enumerate(results, 1):
+                print(fmt_result(rank, r, color=True))
+                out_lines.append(fmt_result(rank, r, color=False))
         records.append({"query": query, "filter": ctype, "results": results})
 
     return records, out_lines
 
 
+# ── interactive REPL ──────────────────────────────────────────────────────────
+
+def interactive_mode(retriever: DenseRetriever):
+    print(f"\n{BOLD}=== Dense Search (MiniLM) ==={RST}")
+    print("Commands:  <query>             — search all types")
+    print("           <query> --concept   — filter concept blocks")
+    print("           <query> --activity  — filter activity blocks")
+    print("           <query> --question  — filter question blocks")
+    print("           quit / exit         — exit\n")
+
+    while True:
+        try:
+            raw = input("🧠 Query > ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nBye!")
+            break
+
+        if not raw: continue
+        if raw.lower() in ("quit", "exit"):
+            print("Bye!")
+            break
+
+        ctype = None
+        for flag in ("--concept", "--activity", "--question"):
+            if flag in raw:
+                ctype = flag.lstrip("-")
+                raw   = raw.replace(flag, "").strip()
+
+        results = retriever.search(raw, top_k=5, content_type=ctype)
+        filter_str = f" [filter: {ctype}]" if ctype else ""
+        print(f"\n{BOLD}Results for: {raw}{filter_str}{RST}")
+
+        if not results:
+            print("  No results found.")
+        else:
+            for rank, r in enumerate(results, 1):
+                print(fmt_result(rank, r, color=True))
+        print()
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    print("\n=== Stage 2b — Dense Retrieval [Iteration 2: Embedding Cache] ===\n")
+    os.system("") # enable ansi formatting on windows
+    print(f"\n{BOLD}=== Stage 2b — Dense Retrieval [Iteration 3] ==={RST}\n")
 
     corpus    = load_corpus(INPUT)
     retriever = DenseRetriever(corpus)
     s = retriever.stats()
-    print(f"\nCorpus: {s['total']} blocks")
-    print("  " + " | ".join(f"{t}={n}" for t, n in s["by_type"].items()))
+    print(f"Corpus: {s['total']} blocks | " + " | ".join(f"{t}={n}" for t, n in s["by_type"].items()))
 
     records, out_lines = run_demo(retriever)
 
-    txt = OUT_DIR / "dense_results_v2.txt"
-    jsn = OUT_DIR / "dense_results_v2.json"
+    txt = OUT_DIR / "dense_results_v3.txt"
+    jsn = OUT_DIR / "dense_results_v3.json"
     txt.write_text("\n".join(out_lines), encoding="utf-8")
     jsn.write_text(json.dumps(records, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\n✓ Plain results -> {txt}")
     print(f"✓ JSON results  -> {jsn}")
-    print(f"✓ Cache         -> {CACHE_DIR}/")
 
+    if sys.stdin.isatty():
+        interactive_mode(retriever)
 
 if __name__ == "__main__":
     main()

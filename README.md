@@ -21,17 +21,25 @@
 PariShiksha/
 ├── pdfs/                        # Input PDFs (ch1.pdf … ch12.pdf)
 ├── extracted_text/
-│   ├── extracted_text.json      # Structured extraction output
-│   └── extracted_text.txt       # Plain-text extraction output
+│   ├── extracted_text.json      # Structured extraction output (v4)
+│   ├── extracted_text.txt       # Plain-text extraction output
+│   └── versions/                # v1–v4 incremental extraction outputs
 ├── chunk/
 │   └── chunked_text.json        # Chunked output ready for retrieval
 ├── tokening/
 │   └── tokenizer_analysis.txt   # GPT-2 / BERT / T5 comparison report
+├── retrieval/
+│   ├── results_v1.txt           # Basic BM25 results
+│   ├── results_v2.txt           # Filtered + deduplicated results
+│   ├── results_v3.txt           # Final plain-text results
+│   └── results_v3.json          # Structured JSON results
 ├── StageDocumentation/
-│   └── Stage1.md                # Full development log (all phases)
+│   ├── Stage1.md                # Extraction dev log
+│   └── Stage2.md                # Retrieval dev log
 ├── textextract.py               # Stage 1 — PDF extraction & structuring
-├── tokening.py                  # Stage 2 — Tokenizer comparison
-├── chunking.py                  # Stage 3 — Overlapping chunking
+├── tokening.py                  # Tokenizer comparison (GPT-2 / BERT / T5)
+├── chunking.py                  # Overlapping chunking
+├── retrieval.py                 # Stage 2 — BM25 retrieval
 ├── hld.txt                      # High-level pipeline diagram
 └── README.md
 ```
@@ -51,7 +59,7 @@ NCERT PDF
    ↓
 [Chunking + Metadata]            →  chunking.py
    ↓
-[Lexical Retrieval (BM25)]       →  (Stage 2)
+[Lexical Retrieval (BM25)]  ✅   →  retrieval.py
    ↓
 [LLM (Grounded Generation)]      →  (Stage 3)
    ↓
@@ -80,10 +88,10 @@ source .venv/bin/activate
 ### 2. Install Dependencies
 
 ```bash
-pip install pymupdf transformers tokenizers sentencepiece
+pip install pymupdf transformers tokenizers sentencepiece rank-bm25
 ```
 
-> **Note:** `tokenizers` and `sentencepiece` are required for the BERT and T5 tokenizers respectively. HuggingFace will auto-download tokenizer weights (~few MB) on first run.
+> `rank-bm25` is required for Stage 2 retrieval. HuggingFace will auto-download tokenizer weights on first run.
 
 ### 3. Download PDFs
 
@@ -157,6 +165,33 @@ Each chunk has the form:
   "text": "..."
 }
 ```
+
+---
+
+#### Step 4 — BM25 Retrieval ✅
+```bash
+python retrieval.py
+```
+**Output:** `retrieval/results_v3.txt`, `retrieval/results_v3.json`
+
+Runs 5 demo queries against the BM25 index and saves results. If run from a terminal, also starts an **interactive search REPL**.
+
+**Inline type filters:**
+```
+🔍 Query > evaporation cooling --concept
+🔍 Query > dissolve salt beaker --activity
+🔍 Query > stats
+```
+
+**Retrieval version history:**
+
+| Version | Output | Key Addition |
+|---------|--------|--------------|
+| v1 | `results_v1.txt` | Basic BM25 index + 5 demo queries |
+| v2 | `results_v2.txt` | Metadata type filter + deduplication |
+| **v3** ✅ | `results_v3.txt` + `results_v3.json` | Color output, term highlighting, REPL, JSON export |
+
+Full dev log: [`StageDocumentation/Stage2.md`](StageDocumentation/Stage2.md)
 
 ---
 
@@ -253,14 +288,20 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 |------|-------------|
 | `extracted_text/extracted_text.json` | Structured blocks with `page`, `section`, `type`, `text` |
 | `extracted_text/extracted_text.txt` | Plain-text version for quick inspection |
+| `extracted_text/versions/` | Extraction outputs v1–v4 |
 | `chunk/chunked_text.json` | Overlapping word-level chunks with metadata |
 | `tokening/tokenizer_analysis.txt` | Token counts and first-25 tokens per sample per tokenizer |
-| `StageDocumentation/Stage1.md` | Complete iterative development log |
+| `retrieval/results_v3.json` | Structured BM25 results (query → top-5 blocks with metadata) |
+| `StageDocumentation/Stage1.md` | Extraction iterative development log |
+| `StageDocumentation/Stage2.md` | Retrieval iterative development log |
 
 ---
 
-## 🔮 Next Stages
+## 🔮 Stages
 
-- **Stage 2:** BM25 Lexical Retrieval
-- **Stage 3:** Grounded QA with an LLM
-- **Stage 4:** Evaluation Engine (precision, recall, faithfulness)
+| Stage | Status | Description |
+|-------|--------|-------------|
+| Stage 1 | ✅ Complete | PDF extraction, structuring, tokenizer analysis, chunking |
+| Stage 2 | ✅ Complete | BM25 lexical retrieval with metadata filtering |
+| Stage 3 | 🔜 Planned | Grounded QA with an LLM |
+| Stage 4 | 🔜 Planned | Evaluation Engine (precision, recall, faithfulness) |

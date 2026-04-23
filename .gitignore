@@ -2,3 +2,4 @@ pdfs/
 .venv
 prob_def.pdf
 plans/
+__pycache__

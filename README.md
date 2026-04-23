@@ -1,6 +1,6 @@
 # PariShiksha - NCERT Textbook Corpus Pipeline
 
-> **Week 9 Assignment** - Taking a raw NCERT Science PDF and turning it into something a retrieval system can actually reason over. This covers ingestion, structured extraction, tokenizer comparison and chunking design.
+>Taking a raw NCERT Science PDF and turning it into something a retrieval system can actually reason over. This covers ingestion, structured extraction, tokenizer comparison and chunking design.
 
 ---
 

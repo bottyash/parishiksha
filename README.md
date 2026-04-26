@@ -53,21 +53,21 @@ At its core, the pipeline takes a PDF and progressively shapes it into something
 ```
 NCERT PDF
   |
-[Ingestion + OCR fallback]       textextract.py
+[Ingestion + OCR fallback]       
   |
-[Cleaning + Structuring]         extracted_text/extracted_text.json
+[Cleaning + Structuring]         
   |
-[Tokenizer Comparison]           tokening.py
+[Tokenizer Comparison]          
   |
-[Chunking + Metadata]            chunking.py
+[Chunking + Metadata]        
   |
-[Lexical Retrieval (BM25)]       retrieval.py
+[Lexical Retrieval (BM25)]       
   |
-[Dense Retrieval (MiniLM)]       dense_retrieval.py
+[Dense Retrieval (MiniLM)]       
   |
-[LLM (Grounded Generation)]      (Stage 3)
+[LLM (Grounded Generation)]     
   |
-[Evaluation Engine]              (Stage 4)
+[Evaluation Engine]            
 ```
 
 ---
@@ -338,5 +338,5 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | Stage 1 | Complete | PDF extraction, structuring, tokenizer analysis and chunking |
 | Stage 2a | Complete | BM25 lexical retrieval with metadata filtering |
 | Stage 2b | Complete | Dense bi-encoder retrieval (MiniLM) with numpy cache |
-| Stage 3 | Planned | Grounded QA with an LLM |
-| Stage 4 | Planned | Evaluation Engine (precision, recall and faithfulness) |
+| Stage 3 | Complete | Grounded QA with an LLM |
+| Stage 4 | Complete | Evaluation Engine (precision, recall and faithfulness) |

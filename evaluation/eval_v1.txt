@@ -1,0 +1,36 @@
+======================================================================
+Stage 4 — Evaluation Report [Iteration 1]
+======================================================================
+
+Q:  What are the characteristics of particles of matter?
+A:  These states of matter arise due to the variation in the characteristics
+    ROUGE-L F1=0.1429  P=0.1667  R=0.1250
+    Token F1=0.1429  |  Faithfulness=1.0000
+
+Q:  Why does evaporation cause cooling?
+A:  The particles at the surface of the liquid gain energy from the surroundings or body surface and change into vapour.
+    ROUGE-L F1=0.7000  P=0.7000  R=0.7000
+    Token F1=0.7000  |  Faithfulness=0.7500
+
+Q:  What is the difference between solid, liquid and gas?
+A:  The mass per unit volume of a substance is called density.
+    ROUGE-L F1=0.0606  P=0.0909  R=0.0455
+    Token F1=0.0606  |  Faithfulness=1.0000
+
+Q:  What is latent heat of vaporisation?
+A:  The heat energy required to change
+    ROUGE-L F1=0.4000  P=1.0000  R=0.2500
+    Token F1=0.4000  |  Faithfulness=1.0000
+
+Q:  What happens when you dissolve salt in water?
+A:  The particles of salt get into the spaces between particles of water.
+    ROUGE-L F1=0.7500  P=1.0000  R=0.6000
+    Token F1=0.7500  |  Faithfulness=1.0000
+
+======================================================================
+AGGREGATE SCORES
+======================================================================
+  Avg ROUGE-L F1   : 0.4107
+  Avg Token F1     : 0.4107
+  Avg Faithfulness : 0.9500
+======================================================================

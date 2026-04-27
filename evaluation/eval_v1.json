@@ -1,0 +1,52 @@
+[
+  {
+    "question": "What are the characteristics of particles of matter?",
+    "answer": "These states of matter arise due to the variation in the characteristics",
+    "reference": "Particles of matter have space between them, they are continuously moving, and they attract each other.",
+    "rouge_l_f1": 0.1429,
+    "rouge_l_prec": 0.1667,
+    "rouge_l_rec": 0.125,
+    "token_f1": 0.1429,
+    "faithfulness": 1.0
+  },
+  {
+    "question": "Why does evaporation cause cooling?",
+    "answer": "The particles at the surface of the liquid gain energy from the surroundings or body surface and change into vapour.",
+    "reference": "During evaporation, particles at the surface of liquid gain energy from the surroundings and escape into vapour, making surroundings cooler.",
+    "rouge_l_f1": 0.7,
+    "rouge_l_prec": 0.7,
+    "rouge_l_rec": 0.7,
+    "token_f1": 0.7,
+    "faithfulness": 0.75
+  },
+  {
+    "question": "What is the difference between solid, liquid and gas?",
+    "answer": "The mass per unit volume of a substance is called density.",
+    "reference": "Solids have fixed shape and volume. Liquids have fixed volume but no fixed shape. Gases have neither fixed shape nor fixed volume.",
+    "rouge_l_f1": 0.0606,
+    "rouge_l_prec": 0.0909,
+    "rouge_l_rec": 0.0455,
+    "token_f1": 0.0606,
+    "faithfulness": 1.0
+  },
+  {
+    "question": "What is latent heat of vaporisation?",
+    "answer": "The heat energy required to change",
+    "reference": "Latent heat of vaporisation is the heat energy required to change 1 kg of liquid to gas at its boiling point at atmospheric pressure.",
+    "rouge_l_f1": 0.4,
+    "rouge_l_prec": 1.0,
+    "rouge_l_rec": 0.25,
+    "token_f1": 0.4,
+    "faithfulness": 1.0
+  },
+  {
+    "question": "What happens when you dissolve salt in water?",
+    "answer": "The particles of salt get into the spaces between particles of water.",
+    "reference": "The particles of salt get into the spaces between particles of water and the water level does not change significantly.",
+    "rouge_l_f1": 0.75,
+    "rouge_l_prec": 1.0,
+    "rouge_l_rec": 0.6,
+    "token_f1": 0.75,
+    "faithfulness": 1.0
+  }
+]

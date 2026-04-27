@@ -40,6 +40,7 @@ PariShiksha/
 ├── chunking.py                  # Overlapping chunking
 ├── retrieval.py                 # Stage 2a - BM25 lexical retrieval
 ├── dense_retrieval.py           # Stage 2b - MiniLM dense retrieval
+├── qa.py                        # Stage 3 - Grounded QA (FLAN-T5)
 ├── hld.txt                      # High-level pipeline diagram
 └── README.md
 ```
@@ -63,7 +64,9 @@ NCERT PDF
   |
 [Lexical Retrieval (BM25)]       
   |
-[Dense Retrieval (MiniLM)]       
+[Dense Retrieval (MiniLM)]       dense_retrieval.py
+  |
+[Grounded QA (FLAN-T5)]         qa.py
   |
 [LLM (Grounded Generation)]     
   |
@@ -227,6 +230,28 @@ Full dev log: [`StageDocumentation/Stage2.md`](StageDocumentation/Stage2.md)
 
 ---
 
+### Stage 3 - Grounded QA (FLAN-T5)
+
+```bash
+python qa.py
+```
+
+**Output:** `qa_output/qa_v3.txt` and `qa_output/qa_v3.json`
+
+Pipes the top-5 retrieved blocks as labelled context into `google/flan-t5-base`. The model acts as a science teacher and generates a complete, grounded answer for each question. If run from a terminal, an interactive REPL lets you ask any question.
+
+**QA version history:**
+
+| Version | Key Change |
+|---------|------------|
+| v1 | Basic retrieval + minimal prompt → correct but short extractive answers |
+| v2 | Science-teacher persona, metadata labels in context, `length_penalty=1.5` → fuller sentences |
+| **v3** | Color output, interactive REPL, session saving to `qa_output/session.json` |
+
+Full dev log: [`StageDocumentation/Stage3.md`](StageDocumentation/Stage3.md)
+
+---
+
 ## Content-Type Classification
 
 `textextract.py` classifies every extracted block into one of three types:
@@ -326,8 +351,10 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | `retrieval/results_v3.json` | Structured BM25 results (query to top-5 blocks with metadata) |
 | `retrieval/dense_results_v3.json` | Structured MiniLM dense results |
 | `retrieval/cache/corpus_embeddings.npy` | Cached 384-dimensional dense vectors |
+| `qa_output/qa_v3.json` | Grounded QA answers with source attribution |
 | `StageDocumentation/Stage1.md` | Extraction iterative development log |
 | `StageDocumentation/Stage2.md` | Retrieval (BM25 + Dense) iterative log |
+| `StageDocumentation/Stage3.md` | Grounded QA iterative development log |
 
 ---
 
@@ -338,5 +365,5 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | Stage 1 | Complete | PDF extraction, structuring, tokenizer analysis and chunking |
 | Stage 2a | Complete | BM25 lexical retrieval with metadata filtering |
 | Stage 2b | Complete | Dense bi-encoder retrieval (MiniLM) with numpy cache |
-| Stage 3 | Complete | Grounded QA with an LLM |
-| Stage 4 | Complete | Evaluation Engine (precision, recall and faithfulness) |
+| Stage 3 | Complete | Grounded QA with FLAN-T5 and interactive REPL |
+| Stage 4 | Planned | Evaluation Engine (precision, recall and faithfulness) |

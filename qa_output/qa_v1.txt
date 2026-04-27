@@ -1,0 +1,52 @@
+Stage 3 - Grounded QA [Iteration 1: FLAN-T5 base]
+
+
+----------------------------------------------------------------------
+Q: What are the characteristics of particles of matter?
+----------------------------------------------------------------------
+A: solid, liquid and gas
+Sources:
+  [1] page=2 sec=1.2.1 type=concept score=0.8621
+  [2] page=1 sec=1.1 type=concept score=0.6139
+  [3] page=1 sec=1.1.1 type=concept score=0.599
+  [4] page=4 sec=1.3.1 type=concept score=0.5654
+
+----------------------------------------------------------------------
+Q: Why does evaporation cause cooling?
+----------------------------------------------------------------------
+A: gain enough energy to overcome the forces of attraction present in the liquid and change into the vapour state
+Sources:
+  [1] page=9 sec=1.5.2 type=concept score=0.7252
+  [2] page=11 sec=1 type=concept score=0.599
+  [3] page=10 sec=None type=concept score=0.5815
+  [4] page=9 sec=1.5.1 type=concept score=0.5679
+
+----------------------------------------------------------------------
+Q: What is the difference between solid, liquid and gas?
+----------------------------------------------------------------------
+A: solids, liquids and gases can diffuse into liquids.
+Sources:
+  [1] page=6 sec=1.4 type=question score=0.612
+  [2] page=8 sec=None type=concept score=0.5692
+  [3] page=8 sec=1.4.2 type=concept score=0.5164
+  [4] page=4 sec=1.3.2 type=activity score=0.4892
+
+----------------------------------------------------------------------
+Q: What is latent heat of vaporisation?
+----------------------------------------------------------------------
+A: heat energy required to change 1 kg of a liquid to gas
+Sources:
+  [1] page=11 sec=1 type=concept score=0.5533
+  [2] page=11 sec=1 type=concept score=0.5279
+  [3] page=10 sec=None type=concept score=0.4679
+  [4] page=9 sec=1.5.1 type=concept score=0.4296
+
+----------------------------------------------------------------------
+Q: What happens when you dissolve salt in water?
+----------------------------------------------------------------------
+A: the particles of salt get into the spaces between particles of water
+Sources:
+  [1] page=1 sec=1.1.1 type=activity score=0.6302
+  [2] page=1 sec=100 type=concept score=0.4981
+  [3] page=1 sec=1.1.2 type=question score=0.4907
+  [4] page=1 sec=100 type=activity score=0.4078

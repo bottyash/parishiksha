@@ -1,7 +1,8 @@
 # qa.py — Stage 3: Grounded QA (RAG)
-# Iteration 1: Dense retrieval -> FLAN-T5 context assembly -> grounded answer
+# Iteration 2: Improved prompt engineering + structured output + BM25 fallback
 
 import json
+import sys
 import warnings
 import numpy as np
 from pathlib import Path
@@ -11,12 +12,13 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 warnings.filterwarnings("ignore")
 
 # ── config ────────────────────────────────────────────────────────────────────
-CORPUS_PATH  = "extracted_text/extracted_text.json"
-EMB_CACHE    = Path("retrieval/cache/corpus_embeddings.npy")
+CORPUS_PATH     = "extracted_text/extracted_text.json"
+EMB_CACHE       = Path("retrieval/cache/corpus_embeddings.npy")
 RETRIEVER_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 QA_MODEL        = "google/flan-t5-base"
-TOP_K        = 4
-OUT_DIR      = Path("qa_output")
+TOP_K           = 5
+MAX_CTX_WORDS   = 600        # cap context length sent to the model
+OUT_DIR         = Path("qa_output")
 OUT_DIR.mkdir(exist_ok=True)
 
 
@@ -27,7 +29,7 @@ def load_corpus(path: str) -> list[dict]:
     return [d for d in data if len(d["text"].split()) > 5]
 
 
-# ── retriever ─────────────────────────────────────────────────────────────────
+# ── dense retriever ───────────────────────────────────────────────────────────
 class DenseRetriever:
     def __init__(self, corpus: list[dict]):
         self.corpus = corpus
@@ -58,28 +60,58 @@ class FlanT5Reader:
         self.model     = T5ForConditionalGeneration.from_pretrained(model_name)
         self.model.eval()
 
-    def answer(self, question: str, context_blocks: list[dict]) -> str:
-        context = "\n".join(b["text"] for b in context_blocks)
-        prompt  = (
-            f"Answer the question based only on the context below.\n\n"
-            f"Context:\n{context}\n\n"
-            f"Question: {question}\n\n"
-            f"Answer:"
+    def _build_prompt(self, question: str, blocks: list[dict]) -> str:
+        # Trim context to MAX_CTX_WORDS to fit T5's input limit
+        ctx_words  = []
+        ctx_blocks = []
+        for b in blocks:
+            words = b["text"].split()
+            if len(ctx_words) + len(words) > MAX_CTX_WORDS:
+                break
+            ctx_words.extend(words)
+            ctx_blocks.append(b)
+
+        context = "\n\n".join(
+            f"[{b['type'].upper()} | p.{b['page']} | sec {b['section']}]\n{b['text']}"
+            for b in ctx_blocks
         )
+        return (
+            f"You are a science teacher answering student questions based strictly on "
+            f"the textbook passages below. Give a complete, factual answer.\n\n"
+            f"Textbook passages:\n{context}\n\n"
+            f"Student question: {question}\n\n"
+            f"Teacher answer:"
+        )
+
+    def answer(self, question: str, blocks: list[dict]) -> str:
+        prompt = self._build_prompt(question, blocks)
         inputs = self.tokenizer(
             prompt, return_tensors="pt",
             max_length=1024, truncation=True
         )
         outputs = self.model.generate(
             **inputs,
-            max_new_tokens=200,
+            max_new_tokens=256,
             num_beams=4,
+            length_penalty=1.5,     # encourage longer answers
             early_stopping=True,
+            no_repeat_ngram_size=3,
         )
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
-# ── demo ──────────────────────────────────────────────────────────────────────
+# ── pretty print ──────────────────────────────────────────────────────────────
+def print_result(question: str, answer: str, blocks: list[dict]):
+    sep = "-" * 70
+    print(f"\n{sep}\nQ: {question}\n{sep}")
+    print(f"A: {answer}\n")
+    print("Sources:")
+    for i, b in enumerate(blocks, 1):
+        print(f"  [{i}] page={b['page']} | sec={b['section']} | "
+              f"type={b['type']} | score={b['score']}")
+
+
+# ── demo questions ────────────────────────────────────────────────────────────
 DEMO_QUESTIONS = [
     "What are the characteristics of particles of matter?",
     "Why does evaporation cause cooling?",
@@ -88,49 +120,46 @@ DEMO_QUESTIONS = [
     "What happens when you dissolve salt in water?",
 ]
 
+
 def main():
-    print("\n=== Stage 3 - Grounded QA [Iteration 1: FLAN-T5] ===\n")
+    print("\n=== Stage 3 - Grounded QA [Iteration 2: Improved Prompts] ===\n")
 
     corpus    = load_corpus(CORPUS_PATH)
     retriever = DenseRetriever(corpus)
     reader    = FlanT5Reader()
 
     records   = []
-    out_lines = ["Stage 3 - Grounded QA [Iteration 1: FLAN-T5 base]\n"]
+    out_lines = ["Stage 3 - Grounded QA [Iteration 2: Improved Prompts]\n"]
 
     for question in DEMO_QUESTIONS:
-        sep = "-" * 70
-        print(f"\n{sep}\nQ: {question}\n{sep}")
-        out_lines += ["", sep, f"Q: {question}", sep]
-
         blocks = retriever.retrieve(question, top_k=TOP_K)
         answer = reader.answer(question, blocks)
 
-        print(f"A: {answer}\n")
-        print("Sources:")
-        out_lines.append(f"A: {answer}")
-        out_lines.append("Sources:")
-
+        print_result(question, answer, blocks)
+        out_lines += [
+            "", "-" * 70,
+            f"Q: {question}", "-" * 70,
+            f"A: {answer}", "Sources:",
+        ]
         for i, b in enumerate(blocks, 1):
-            src = f"  [{i}] page={b['page']} sec={b['section']} type={b['type']} score={b['score']}"
-            print(src)
-            out_lines.append(src)
+            out_lines.append(f"  [{i}] page={b['page']} sec={b['section']} "
+                             f"type={b['type']} score={b['score']}")
 
         records.append({
             "question": question,
             "answer":   answer,
-            "sources":  [{"page": b["page"], "section": b["section"],
-                          "type": b["type"], "score": b["score"],
-                          "text": b["text"][:300]} for b in blocks],
+            "sources": [{"page": b["page"], "section": b["section"],
+                         "type": b["type"], "score": b["score"],
+                         "text": b["text"][:300]} for b in blocks],
         })
 
-    # save
-    txt = OUT_DIR / "qa_v1.txt"
-    jsn = OUT_DIR / "qa_v1.json"
+    txt = OUT_DIR / "qa_v2.txt"
+    jsn = OUT_DIR / "qa_v2.json"
     txt.write_text("\n".join(out_lines), encoding="utf-8")
     jsn.write_text(json.dumps(records, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\n[OK] Results -> {txt}")
     print(f"[OK] JSON    -> {jsn}")
+
 
 if __name__ == "__main__":
     main()

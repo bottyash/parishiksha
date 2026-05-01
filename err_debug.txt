@@ -1,0 +1,53 @@
+
+--- Executing LCEL Ingestion Chain ---
+Lazy loading documents and writing to extracted_text/extracted_text.txt...
+Loaded 75 documents.
+[langchain-structured] Wrote: chunk\chunked_text.json\chunks_langchain.json | total chunks=93
+Building BM25 Retriever from chunks...
+[langchain-structured] Saved BM25 Retriever to chunk\chunked_text.json\bm25_retriever.pkl
+Traceback (most recent call last):
+  File "D:\IITGn\Projects\Week9\PariShiksha\chunkinglangchain.py", line 114, in <module>
+    main()
+    ~~~~^^
+  File "D:\IITGn\Projects\Week9\PariShiksha\chunkinglangchain.py", line 108, in main
+    retriever = ingestion_chain.invoke(IN_FILE)
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\runnables\base.py", line 3201, in invoke
+    input_ = context.run(step.invoke, input_, config)
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\runnables\base.py", line 5062, in invoke
+    return self._call_with_config(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        self._invoke,
+        ^^^^^^^^^^^^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\runnables\base.py", line 2104, in _call_with_config
+    context.run(
+    ~~~~~~~~~~~^
+        call_func_with_variable_args,  # type: ignore[arg-type]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    ),
+    ^
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\runnables\config.py", line 486, in call_func_with_variable_args
+    return func(input, **kwargs)  # type: ignore[call-arg]
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\runnables\base.py", line 4930, in _invoke
+    output = output.invoke(
+        input_,
+    ...<4 lines>...
+        ),
+    )
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_core\retrievers.py", line 222, in invoke
+    result = self._get_relevant_documents(
+        input, run_manager=run_manager, **kwargs_
+    )
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_community\retrievers\bm25.py", line 114, in _get_relevant_documents
+    processed_query = self.preprocess_func(query)
+  File "D:\IITGn\Projects\Week9\PariShiksha\.venv\Lib\site-packages\langchain_community\retrievers\bm25.py", line 12, in default_preprocessing_func
+    return text.split()
+           ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'split'

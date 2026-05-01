@@ -32,15 +32,24 @@ PariShiksha/
 │   ├── cache/                   # Dense embedding matrix (.npy)
 │   ├── results_v3.json          # BM25 structured results
 │   └── dense_results_v3.json    # Dense structured results
+├── qa_output/
+│   └── qa_v3.json               # Grounded QA answers with source attribution
+├── evaluation/
+│   └── eval_final.json          # Evaluation scores (ROUGE-L, F1, Faithfulness, P@5)
 ├── StageDocumentation/
 │   ├── Stage1.md                # Extraction dev log
-│   └── Stage2.md                # Retrieval dev log (Lexical + Dense)
+│   ├── Stage2.md                # Retrieval dev log (Lexical + Dense)
+│   ├── Stage3.md                # Grounded QA dev log
+│   └── Stage4.md                # Evaluation dev log
 ├── textextract.py               # Stage 1 - PDF extraction & structuring
 ├── tokening.py                  # Tokenizer comparison (GPT-2 / BERT / T5)
-├── chunking.py                  # Overlapping chunking
+├── chunking.py                  # Fixed-window overlapping chunking
+├── chunkinglangchain.py         # Content-type-aware LangChain chunking
 ├── retrieval.py                 # Stage 2a - BM25 lexical retrieval
 ├── dense_retrieval.py           # Stage 2b - MiniLM dense retrieval
-├── qa.py                        # Stage 3 - Grounded QA (FLAN-T5)
+├── qa.py                        # Stage 3 - Grounded QA (FLAN-T5, custom)
+├── qa_langchain.py              # Stage 3 - Grounded QA (FLAN-T5, LCEL chain)
+├── evaluate.py                  # Stage 4 - Evaluation engine
 ├── hld.txt                      # High-level pipeline diagram
 └── README.md
 ```
@@ -54,23 +63,21 @@ At its core, the pipeline takes a PDF and progressively shapes it into something
 ```
 NCERT PDF
   |
-[Ingestion + OCR fallback]       
+[Ingestion + OCR fallback]       textextract.py
   |
-[Cleaning + Structuring]         
+[Cleaning + Structuring]         textextract.py
   |
-[Tokenizer Comparison]          
+[Tokenizer Comparison]           tokening.py
   |
-[Chunking + Metadata]        
+[Chunking + Metadata]            chunking.py / chunkinglangchain.py
   |
-[Lexical Retrieval (BM25)]       
+[Lexical Retrieval (BM25)]       retrieval.py
   |
 [Dense Retrieval (MiniLM)]       dense_retrieval.py
   |
-[Grounded QA (FLAN-T5)]         qa.py
+[Grounded QA (FLAN-T5)]          qa.py / qa_langchain.py
   |
-[LLM (Grounded Generation)]     
-  |
-[Evaluation Engine]            
+[Evaluation Engine]              evaluate.py
 ```
 
 ---
@@ -94,10 +101,10 @@ source .venv/bin/activate
 ### 2. Install Dependencies
 
 ```bash
-pip install pymupdf transformers tokenizers sentencepiece rank-bm25 sentence-transformers
+pip install pymupdf transformers tokenizers sentencepiece rank-bm25 sentence-transformers langchain langchain-community langchain-core
 ```
 
-> `rank-bm25` is needed for Stage 2a (Lexical). `sentence-transformers` is needed for Stage 2b (Dense). HuggingFace will pull down tokenizer and model weights automatically on first run ($~80MB$ for the MiniLM model).
+> `sentence-transformers` (~80MB) and `google/flan-t5-base` (~250MB) are downloaded automatically from HuggingFace on first run. `langchain*` packages are only needed for the LangChain alternative pipeline (`chunkinglangchain.py`, `qa_langchain.py`).
 
 ### 3. Download the PDFs
 
@@ -252,6 +259,44 @@ Full dev log: [`StageDocumentation/Stage3.md`](StageDocumentation/Stage3.md)
 
 ---
 
+### Stage 3 (Alternative) — LangChain LCEL Pipeline
+
+```bash
+# Step 1: build content-type-aware chunks + BM25 index
+python chunkinglangchain.py
+
+# Step 2: interactive QA over LangChain BM25
+python qa_langchain.py
+```
+
+Uses `RecursiveCharacterTextSplitter` with per-type chunk sizes (concept=700, activity=1200, question=500) and wires retrieval + generation as an LCEL chain: `retriever | format_docs | prompt | llm | StrOutputParser`.
+
+---
+
+### Stage 4 — Evaluation Engine
+
+```bash
+python evaluate.py
+```
+
+**Output:** `evaluation/eval_final.txt` and `evaluation/eval_final.json`
+
+Scores all QA answers across 5 metrics (no external libraries required):
+
+| Metric | Description |
+|--------|-------------|
+| **ROUGE-L F1** | LCS overlap vs gold reference |
+| **Token F1** | Bag-of-words overlap vs gold reference |
+| **Faithfulness** | Fraction of answer tokens found in retrieved context |
+| **Precision@5** | Fraction of top-5 sources with score ≥ 0.50 |
+| **Avg Source Score** | Mean cosine similarity of retrieved blocks |
+
+Also prints a **BM25 vs Dense retriever comparison table** side-by-side.
+
+Full dev log: [`StageDocumentation/Stage4.md`](StageDocumentation/Stage4.md)
+
+---
+
 ## Content-Type Classification
 
 `textextract.py` classifies every extracted block into one of three types:
@@ -355,6 +400,8 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | `StageDocumentation/Stage1.md` | Extraction iterative development log |
 | `StageDocumentation/Stage2.md` | Retrieval (BM25 + Dense) iterative log |
 | `StageDocumentation/Stage3.md` | Grounded QA iterative development log |
+| `StageDocumentation/Stage4.md` | Evaluation engine development log |
+| `evaluation/eval_final.json` | Aggregate + per-question evaluation scores |
 
 ---
 
@@ -365,5 +412,5 @@ Full development log: [`StageDocumentation/Stage1.md`](StageDocumentation/Stage1
 | Stage 1 | Complete | PDF extraction, structuring, tokenizer analysis and chunking |
 | Stage 2a | Complete | BM25 lexical retrieval with metadata filtering |
 | Stage 2b | Complete | Dense bi-encoder retrieval (MiniLM) with numpy cache |
-| Stage 3 | Complete | Grounded QA with FLAN-T5 and interactive REPL |
-| Stage 4 | Planned | Evaluation Engine (precision, recall and faithfulness) |
+| Stage 3 | Complete | Grounded QA with FLAN-T5 (custom + LangChain LCEL) |
+| Stage 4 | Complete | Evaluation Engine — ROUGE-L, Token F1, Faithfulness, Precision@5 |
